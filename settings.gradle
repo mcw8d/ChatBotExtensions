@@ -1,0 +1,3 @@
+include 'hangouts-firefox'
+
+project(':hangouts-firefox').projectDir = file('hangouts/firefox/')

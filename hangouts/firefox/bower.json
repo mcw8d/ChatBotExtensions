@@ -1,0 +1,6 @@
+{
+    "name": "chat-bot-relay-firefox",
+    "dependencies": {
+        "jquery": "^2.1.4"
+    }
+}

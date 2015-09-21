@@ -1,0 +1,8 @@
+version = "0.1.0"
+ext.bowerDestination = "${buildDir}/data"
+
+task runExtension(type: Exec) {
+    executable "${rootDir}/node_modules/.bin/jpm"
+    workingDir buildDir
+    args '-b', '/usr/bin/firefox', 'run'
+}

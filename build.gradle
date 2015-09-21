@@ -1,0 +1,66 @@
+import groovy.json.JsonSlurper
+
+plugins {
+    id 'com.moowork.node' version '0.10'
+}
+
+apply plugin: 'com.moowork.node'
+
+node {
+    version = '4.1.0'
+    download = true
+}
+
+subprojects {
+    task clean(type: Delete) {
+        description 'Deletes the build directory from the current project.'
+        delete buildDir
+    }
+
+    task build(dependsOn: ['tsc', 'copyBower', 'copyResources']) {
+        description 'Shortcut task for calling tsc, copyBower and copyResources.'
+    }
+
+    task tsc(type: Exec) {
+        description 'Calls the typescript compiler on every .ts file located in a project\'s src/main/ts'
+        def standardArgs = ['--module', 'commonjs', '--outDir', "$buildDir", '--rootDir', "${projectDir}/src/main/ts/"]
+        Set<File> typescriptFiles = fileTree(dir: 'src/main/ts', include: '**/*.ts').getFiles()
+        enabled = !typescriptFiles.empty
+        executable "${rootDir}/node_modules/.bin/tsc"
+        args (standardArgs + typescriptFiles)
+    }
+
+    task bowerInstall(type: Exec) {
+        description 'Executes a bower install to grab all of a project\'s bower dependencies.'
+        File bowerConfig = file('bower.json')
+        enabled = bowerConfig.exists()
+        executable "${rootDir}/node_modules/.bin/bower"
+        args 'install'
+    }
+
+    afterEvaluate {
+        task copyResources(type: Copy) {
+            description 'Copies files from src/main/resources and expands GStrings with properties set in a project\'s build.gradle.'
+            from 'src/main/resources'
+            into buildDir
+            expand(project.properties)
+        }
+
+        task copyBower(type: Copy) {
+            description 'Steps through every folder in bower_components and copies the files defined in the bower.json main block into the bowerDestination defined for a project.'
+            List<String> mainFiles = []
+            JsonSlurper jsonSlurper = new JsonSlurper()
+            fileTree(dir: "${projectDir}/bower_components", include: '**/bower.json').visit { visitElement ->
+                if (!visitElement.isDirectory()) {
+                    def config = jsonSlurper.parse(visitElement.getFile())
+                    if (config.main) {
+                        def parentPath = visitElement.getRelativePath().getParent().getPathString()
+                        mainFiles << 'bower_components/' + parentPath + '/' + config.main
+                    }
+                }
+            }
+            from mainFiles
+            into bowerDestination
+        }
+    }
+}
