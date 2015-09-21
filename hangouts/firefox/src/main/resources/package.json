@@ -1,0 +1,13 @@
+{
+  "title": "Hangout Chat Bot",
+  "name": "hangoutchatbot",
+  "version": "${version}",
+  "description": "Watches a Google Hangout and responds to various commands",
+  "main": "index.js",
+  "author": "Matthew Williams",
+  "engines": {
+    "firefox": ">=38.0a1",
+    "fennec": ">=38.0a1"
+  },
+  "license": "MIT"
+}

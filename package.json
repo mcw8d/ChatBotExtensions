@@ -1,0 +1,9 @@
+{
+    "name": "ChatBotBuildEnv",
+    "version": "0.1.0",
+    "devDependencies": {
+        "bower": "^1.5.2",
+        "jpm": "^1.0.1",
+        "typescript": "^1.6.2"
+    }
+}
