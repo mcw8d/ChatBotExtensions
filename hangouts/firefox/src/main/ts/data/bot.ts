@@ -1,8 +1,4 @@
 /// <reference path="../../typings/tsd.d.ts" />
-interface Window {
-    port: any;
-}
-
 interface KeyboardEventInit {
     keyCode: number;
 }
@@ -68,13 +64,14 @@ module ChatBot {
                         var addedNode = $(mutation.addedNodes[i]);
                         if (addedNode.hasClass('tk Sn') && addedNode.is(':last-child')) {
                             var chatBlock = addedNode.find('.JL');
-                            if (chatBlock.length === 1) {
-                                var message = chatBlock.children().children(':last-child').text();
-                                var command = _this.getCommand(message);
-                                if (command) {
-                                    _this.emitResponse(command());
-                                }
-                                _this._currentChatObserver.disconnect();
+                            var message = chatBlock.children().children(':last-child').text();
+                            var command = _this.getCommand(message);
+
+                            _this._currentChatObserver.disconnect();
+                            if (command) {
+                                _this.emitResponse(command());
+                                console.debug('Finished sending response.')
+                            } else {
                                 _this._currentChatObserver.observe(chatBlock.get(0), _this._observerConfig);
                             }
                         }
@@ -99,9 +96,13 @@ module ChatBot {
         }
 
         emitResponse (response: string) {
+            var inputElement = this._inputDiv.get(0);
+            inputElement.dispatchEvent(
+                new FocusEvent('focus', {bubbles: true, cancelable: true})
+            );
             this._inputDiv.append(document.createTextNode(response));
-            this._inputDiv.get(0).dispatchEvent(
-                new KeyboardEvent('keypress', {key: 'Enter', keyCode: 13})
+            inputElement.dispatchEvent(
+                new KeyboardEvent('keypress', {key: 'Enter', keyCode: 13, bubbles: true, cancelable: true})
             );
         }
     }
@@ -117,7 +118,6 @@ window.setTimeout(function () {
             mutations.forEach(function (mutation) {
                 if (mutation.target instanceof Element) {
                     var chatBot = new ChatBot.Relay((<Element>mutation.target).getAttribute('cid'));
-                    self.port.emit('NewRelay', chatBot);
                     cidObserver.disconnect();
                 }
             });
