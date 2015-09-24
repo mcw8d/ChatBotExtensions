@@ -1,41 +1,19 @@
 /// <reference path="../../typings/tsd.d.ts" />
+/// <reference path="commands.ts" />
+interface Window {
+    options: any;
+}
+
 interface KeyboardEventInit {
     keyCode: number;
 }
 
 module ChatBot {
-    interface CommandFunction {
-        (...rest: string[]): string;
-    }
-
-    interface CommandDictionary {
-        [command: string]: CommandFunction;
-    }
-
-    class LocalCommands {
-        private _commands: CommandDictionary = {
-            'bot_time': function () {
-                return (new Date()).toString();
-            },
-            commands: () => {
-                return Object.keys(this._commands).join(', ');
-            }
-        }
-
-        has(command: string): boolean {
-            return this._commands.hasOwnProperty(command);
-        }
-
-        get(command: string): CommandFunction {
-            return this._commands[command];
-        }
-    }
-
     export class Relay {
         private _chatContainer = $('.hN.so.Ij').children(':nth-child(2)');
         private _commandRegEx = /^#\!(\w+)/;
         private _inputDiv = $('.vE.dQ.editable');
-        private _localCommands = new LocalCommands();
+        private _commands = new Common.Commands(self.options.version);
         private _observerConfig: MutationObserverInit = {
             childList: true
         };
@@ -86,10 +64,10 @@ module ChatBot {
             this._currentChatObserver.disconnect();
         }
 
-        getCommand (message: string): CommandFunction {
+        getCommand (message: string): Common.CommandFunction {
             var regexResults = this._commandRegEx.exec(message);
-            if (regexResults && regexResults.length > 1 && this._localCommands.has(regexResults[1])) {
-                return this._localCommands.get(regexResults[1]);
+            if (regexResults && regexResults.length > 1 && this._commands.has(regexResults[1])) {
+                return this._commands.get(regexResults[1]);
             }
             return undefined;
         }
