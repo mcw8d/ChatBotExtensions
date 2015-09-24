@@ -23,7 +23,11 @@ subprojects {
 
     task tsc(type: Exec) {
         description 'Calls the typescript compiler on every .ts file located in a project\'s src/main/ts'
-        def standardArgs = ['--module', 'commonjs', '--outDir', "$buildDir", '--rootDir', "${projectDir}/src/main/ts/"]
+        def standardArgs = [
+            '--module', 'commonjs',
+            '--outDir', "$buildDir",
+            '--rootDir', "${projectDir}/src/main/ts/"
+        ]
         Set<File> typescriptFiles = fileTree(dir: 'src/main/ts', include: '**/*.ts').getFiles()
         enabled = !typescriptFiles.empty
         executable "${rootDir}/node_modules/.bin/tsc"
