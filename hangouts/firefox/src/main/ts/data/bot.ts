@@ -8,34 +8,37 @@ interface KeyboardEventInit {
     keyCode: number;
 }
 
-module ChatBot {
+namespace KappaBot {
     export class Relay {
         private _chatContainer = $('.hN.so.Ij').children(':nth-child(2)');
-        private _commandRegEx = /^#\!(\w+)/;
         private _inputDiv = $('.vE.dQ.editable');
+        private _commandRegEx = /^#\!(\w+)(?:\((.*)\))?/;
         private _commands = new Common.Commands(self.options.version);
+        private _currentChatObserver: MutationObserver;
+        private _newChatObserver: MutationObserver;
         private _observerConfig: MutationObserverInit = {
             childList: true
         };
-        private _currentChatObserver: MutationObserver;
-        private _newChatObserver: MutationObserver;
 
         constructor (private _cid: string) {
             var _this = this;
+            var _doneCallback = _this.emitResponse.bind(_this);
+            var _failCallback = console.debug;
+
             this._currentChatObserver = new MutationObserver(function (mutations) {
                 mutations.forEach(function (mutation) {
                     for (var i = 0; i < mutation.addedNodes.length; i++) {
                         var addedNode = $(mutation.addedNodes[i]);
                         if (addedNode.hasClass('Mu SP')) {
                             var message = addedNode.children(':last-child').text();
-                            var command = _this.getCommand(message);
-                            if (command) {
-                                _this.emitResponse(command());
-                            }
+                            _this.processMessage(message)
+                                .done(_doneCallback)
+                                .fail(_failCallback);
                         }
                     }
                 });
             });
+
             this._newChatObserver = new MutationObserver(function (mutations) {
                 mutations.forEach(function (mutation) {
                     for (var i = 0; i < mutation.addedNodes.length; i++) {
@@ -43,33 +46,40 @@ module ChatBot {
                         if (addedNode.hasClass('tk Sn') && addedNode.is(':last-child')) {
                             var chatBlock = addedNode.find('.JL');
                             var message = chatBlock.children().children(':last-child').text();
-                            var command = _this.getCommand(message);
 
                             _this._currentChatObserver.disconnect();
-                            if (command) {
-                                _this.emitResponse(command());
-                            } else {
-                                _this._currentChatObserver.observe(chatBlock.get(0), _this._observerConfig);
-                            }
+                            _this._currentChatObserver.observe(chatBlock.get(0), _this._observerConfig);
+
+                            _this.processMessage(message)
+                                .done(_doneCallback)
+                                .fail(_failCallback);
                         }
                     }
                 });
             });
+
             this._newChatObserver.observe(this._chatContainer.get(0), this._observerConfig);
             this._currentChatObserver.observe(this._chatContainer.children(':last-child').find('.JL').get(0), this._observerConfig);
+
+            console.debug(`New relay started for ${this._cid}`);
         }
 
         close () {
             this._newChatObserver.disconnect();
             this._currentChatObserver.disconnect();
+            console.debug(`Relay closing for ${this._cid}`);
         }
 
-        getCommand (message: string): Common.CommandFunction {
+        processMessage (message: string): JQueryDeferred<string> {
+            var deferred = $.Deferred();
             var regexResults = this._commandRegEx.exec(message);
-            if (regexResults && regexResults.length > 1 && this._commands.has(regexResults[1])) {
-                return this._commands.get(regexResults[1]);
+            if (regexResults !== null) {
+                var args = (regexResults[2] || '').split(',');
+                this._commands.execute(regexResults[1], args, deferred);
+            } else {
+                deferred.reject('No command present');
             }
-            return undefined;
+            return deferred;
         }
 
         emitResponse (response: string) {
@@ -94,7 +104,7 @@ window.setTimeout(function () {
         var cidObserver = new MutationObserver(function (mutations) {
             mutations.forEach(function (mutation) {
                 if (mutation.target instanceof Element) {
-                    var chatBot = new ChatBot.Relay((<Element>mutation.target).getAttribute('cid'));
+                    var chatBot = new KappaBot.Relay((<Element>mutation.target).getAttribute('cid'));
                     cidObserver.disconnect();
                 }
             });
