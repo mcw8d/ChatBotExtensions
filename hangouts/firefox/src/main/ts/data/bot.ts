@@ -12,7 +12,7 @@ namespace KappaBot {
     export class Relay {
         private _chatContainer = $('.hN.so.Ij').children(':nth-child(2)');
         private _inputDiv = $('.vE.dQ.editable');
-        private _commandRegEx = /^#\!(\w+)(?:\((.*)\))?/;
+        private _commandRegEx = /^\!(\w+)(?:\((.*)\))?/;
         private _commands = new Common.Commands(self.options.version);
         private _currentChatObserver: MutationObserver;
         private _newChatObserver: MutationObserver;
