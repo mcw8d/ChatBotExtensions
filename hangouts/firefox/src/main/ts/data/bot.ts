@@ -23,7 +23,9 @@ namespace KappaBot {
         constructor (private _cid: string) {
             var _this = this;
             var _doneCallback = _this.emitResponse.bind(_this);
-            var _failCallback = console.debug;
+            var _failCallback = function (reason: string) {
+                console.debug(`${_this._cid}: process message failed: ${reason}`);
+            };
 
             this._currentChatObserver = new MutationObserver(function (mutations) {
                 mutations.forEach(function (mutation) {
@@ -31,6 +33,7 @@ namespace KappaBot {
                         var addedNode = $(mutation.addedNodes[i]);
                         if (addedNode.hasClass('Mu SP')) {
                             var message = addedNode.children(':last-child').text();
+                            console.debug(`${_this._cid}: Current chat observer processing: ${message}`);
                             _this.processMessage(message)
                                 .done(_doneCallback)
                                 .fail(_failCallback);
@@ -47,9 +50,12 @@ namespace KappaBot {
                             var chatBlock = addedNode.find('.JL');
                             var message = chatBlock.children().children(':last-child').text();
 
+                            console.debug(`${_this._cid}: New chat observer disconnecting current chat observer.`);
                             _this._currentChatObserver.disconnect();
+                            console.debug(`${_this._cid}: New chat observer redirecting current chat observer.`);
                             _this._currentChatObserver.observe(chatBlock.get(0), _this._observerConfig);
 
+                            console.debug(`${_this._cid}: New chat observer processing: ${message}`);
                             _this.processMessage(message)
                                 .done(_doneCallback)
                                 .fail(_failCallback);
@@ -73,6 +79,7 @@ namespace KappaBot {
         processMessage (message: string): JQueryPromise<string> {
             var regexResults = this._commandRegEx.exec(message);
             if (regexResults !== null) {
+                console.debug(`${this._cid}: Found and attempting command: ${regexResults[1]}`);
                 var args = (regexResults[2] || '').split(',');
                 return this._commands.execute(regexResults[1], args);
             }
@@ -81,16 +88,19 @@ namespace KappaBot {
 
         emitResponse (response: string) {
             var inputElement = this._inputDiv.get(0);
+            console.debug(`${this._cid}: Focusing input box to emit response: ${response}`);
             inputElement.dispatchEvent(
                 new FocusEvent('focus', {bubbles: true, cancelable: true})
             );
             var lines = response.split('\n');
+            console.debug(`${this._cid}: Attempting to add response lines to input box.`);
             lines.forEach((line, idx, arr) => {
                 this._inputDiv.append(document.createTextNode(line));
                 if (idx !== (arr.length - 1)) {
                     this._inputDiv.append(document.createElement('br'));
                 }
             });
+            console.debug(`${this._cid}: Firing keypress event to emit response.`);
             inputElement.dispatchEvent(
                 new KeyboardEvent('keypress', {key: 'Enter', keyCode: 13, bubbles: true, cancelable: true})
             );
