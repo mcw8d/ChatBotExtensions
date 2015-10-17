@@ -34,10 +34,10 @@ namespace Common {
 
         execute(command: string, args: string[]): JQueryPromise<string> {
             if (this.has(command)) {
-                console.debug(`Local command ${command} being executed.`);
+                console.log(`Local command ${command} being executed.`);
                 return this.get(command)(args);
             } else {
-                console.debug(`No local command for ${command}, trying the server.`);
+                console.log(`No local command for ${command}, trying the server.`);
                 return $.get(`${this._url}/execute/${command}`);
             }
         }
