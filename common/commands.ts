@@ -5,47 +5,38 @@ namespace Common {
     }
 
     export interface CommandFunction {
-        (deferred: JQueryDeferred<string>, args: string[]): void;
+        (args: string[]): JQueryPromise<string>;
     }
 
     export class Commands {
         private _url: string = 'http://localhost:8089';
         private _commands: CommandDictionary = {
-            bot_time: function (deferred) {
-                deferred.resolve(new Date().toString());
+            bot_time: function () {
+                return $.when(new Date().toString());
             },
-            commands: (deferred) => {
-                $.get(`${this._url}/commands`, (data: string) => {
-                    deferred.resolve(`${Object.keys(this._commands).join(',')},${data}`);
+            commands: () => {
+                return $.get(`${this._url}/commands`).then((data: string) => {
+                    return `${Object.keys(this._commands).join(',')},${data}`;
                 });
             },
-            echo: function (deferred, args) {
-                deferred.resolve(`You said ${args.join('')}`);
+            echo: function (args) {
+                return $.when(`You said ${args.join('')}`);
             },
-            report_issue: function (deferred) {
-                deferred.resolve('https://github.com/mcw8d/KappaBotRelays/issues/new');
+            issue_link: function () {
+                return $.when('https://github.com/mcw8d/KappaBotRelays/issues/new');
             },
-            version: (deferred) => {
-                deferred.resolve(this.version);
+            version: () => {
+                return $.when(this.version);
             }
         }
 
         constructor (private version: string) {}
 
-        execute(command: string, args: string[], deferred: JQueryDeferred<string>) {
+        execute(command: string, args: string[]): JQueryPromise<string> {
             if (this.has(command)) {
-                this.get(command)(deferred, args);
+                return this.get(command)(args);
             } else {
-                $.get(`${this._url}/commands`, (data: string) => {
-                    var serverCommands = data.split(',');
-                    if (serverCommands.indexOf(command) !== -1) {
-                        $.get(`${this._url}/execute/${command}`, function (data: string) {
-                            deferred.resolve(data);
-                        });
-                    } else {
-                        deferred.reject('Command not found.');
-                    }
-                });
+                return $.get(`${this._url}/execute/${command}`);
             }
         }
 
