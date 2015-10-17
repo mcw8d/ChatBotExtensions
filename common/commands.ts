@@ -1,3 +1,4 @@
+/// <reference path='../../typings/tsd.d.ts' />
 namespace Common {
     interface CommandDictionary {
         [command: string]: CommandFunction;
@@ -8,12 +9,15 @@ namespace Common {
     }
 
     export class Commands {
+        private _url: string = 'http://localhost:8089';
         private _commands: CommandDictionary = {
             bot_time: function (deferred) {
                 deferred.resolve(new Date().toString());
             },
             commands: (deferred) => {
-                deferred.resolve(Object.keys(this._commands).join(', '));
+                $.get(`${this._url}/commands`, (data: string) => {
+                    deferred.resolve(`${Object.keys(this._commands).join(',')},${data}`);
+                });
             },
             echo: function (deferred, args) {
                 deferred.resolve(`You said ${args.join('')}`);
@@ -32,8 +36,16 @@ namespace Common {
             if (this.has(command)) {
                 this.get(command)(deferred, args);
             } else {
-                // TODO call back to localhost if a server is present.
-                deferred.reject('Command not found.');
+                $.get(`${this._url}/commands`, (data: string) => {
+                    var serverCommands = data.split(',');
+                    if (serverCommands.indexOf(command) !== -1) {
+                        $.get(`${this._url}/execute/${command}`, function (data: string) {
+                            deferred.resolve(data);
+                        });
+                    } else {
+                        deferred.reject('Command not found.');
+                    }
+                });
             }
         }
 

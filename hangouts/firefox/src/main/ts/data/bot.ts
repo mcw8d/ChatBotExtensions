@@ -87,7 +87,13 @@ namespace KappaBot {
             inputElement.dispatchEvent(
                 new FocusEvent('focus', {bubbles: true, cancelable: true})
             );
-            this._inputDiv.append(document.createTextNode(response));
+            var lines = response.split('\n');
+            lines.forEach((line, idx, arr) => {
+                this._inputDiv.append(document.createTextNode(line));
+                if (idx !== (arr.length - 1)) {
+                    this._inputDiv.append(document.createElement('br'));
+                }
+            });
             inputElement.dispatchEvent(
                 new KeyboardEvent('keypress', {key: 'Enter', keyCode: 13, bubbles: true, cancelable: true})
             );
