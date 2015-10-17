@@ -70,16 +70,13 @@ namespace KappaBot {
             console.debug(`Relay closing for ${this._cid}`);
         }
 
-        processMessage (message: string): JQueryDeferred<string> {
-            var deferred = $.Deferred();
+        processMessage (message: string): JQueryPromise<string> {
             var regexResults = this._commandRegEx.exec(message);
             if (regexResults !== null) {
                 var args = (regexResults[2] || '').split(',');
-                this._commands.execute(regexResults[1], args, deferred);
-            } else {
-                deferred.reject('No command present');
+                return this._commands.execute(regexResults[1], args);
             }
-            return deferred;
+            return $.Deferred<string>().reject('No command found').promise();
         }
 
         emitResponse (response: string) {
@@ -87,7 +84,13 @@ namespace KappaBot {
             inputElement.dispatchEvent(
                 new FocusEvent('focus', {bubbles: true, cancelable: true})
             );
-            this._inputDiv.append(document.createTextNode(response));
+            var lines = response.split('\n');
+            lines.forEach((line, idx, arr) => {
+                this._inputDiv.append(document.createTextNode(line));
+                if (idx !== (arr.length - 1)) {
+                    this._inputDiv.append(document.createElement('br'));
+                }
+            });
             inputElement.dispatchEvent(
                 new KeyboardEvent('keypress', {key: 'Enter', keyCode: 13, bubbles: true, cancelable: true})
             );

@@ -1,39 +1,42 @@
+/// <reference path='../../typings/tsd.d.ts' />
 namespace Common {
     interface CommandDictionary {
         [command: string]: CommandFunction;
     }
 
     export interface CommandFunction {
-        (deferred: JQueryDeferred<string>, args: string[]): void;
+        (args: string[]): JQueryPromise<string>;
     }
 
     export class Commands {
+        private _url: string = 'http://localhost:8089';
         private _commands: CommandDictionary = {
-            bot_time: function (deferred) {
-                deferred.resolve(new Date().toString());
+            bot_time: function () {
+                return $.when(new Date().toString());
             },
-            commands: (deferred) => {
-                deferred.resolve(Object.keys(this._commands).join(', '));
+            commands: () => {
+                return $.get(`${this._url}/commands`).then((data: string) => {
+                    return `${Object.keys(this._commands).join(',')},${data}`;
+                });
             },
-            echo: function (deferred, args) {
-                deferred.resolve(`You said ${args.join('')}`);
+            echo: function (args) {
+                return $.when(`You said ${args.join('')}`);
             },
-            report_issue: function (deferred) {
-                deferred.resolve('https://github.com/mcw8d/KappaBotRelays/issues/new');
+            issue_link: function () {
+                return $.when('https://github.com/mcw8d/KappaBotRelays/issues/new');
             },
-            version: (deferred) => {
-                deferred.resolve(this.version);
+            version: () => {
+                return $.when(this.version);
             }
         }
 
         constructor (private version: string) {}
 
-        execute(command: string, args: string[], deferred: JQueryDeferred<string>) {
+        execute(command: string, args: string[]): JQueryPromise<string> {
             if (this.has(command)) {
-                this.get(command)(deferred, args);
+                return this.get(command)(args);
             } else {
-                // TODO call back to localhost if a server is present.
-                deferred.reject('Command not found.');
+                return $.get(`${this._url}/execute/${command}`);
             }
         }
 
